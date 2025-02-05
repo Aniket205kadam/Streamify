@@ -1,0 +1,33 @@
+services:
+  postgres:
+    container_name: postgres-streamify-db
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres-password
+      PGDATA: /var/lib/postgresql/data
+      POSTGRES_DB: streamify_dev
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    ports:
+      - 5433:5432
+    networks:
+      - streamify
+    restart: unless-stopped
+
+  mail-dev:
+    container_name: mail-dev-streamify
+    image: maildev/maildev
+    ports:
+      - 1080:1080
+      - 1025:1025
+    networks:
+      - streamify
+
+networks:
+  streamify:
+    driver: bridge
+
+volumes:
+  postgres:
+    driver: local
