@@ -1,5 +1,6 @@
 package com.streamify.post;
 
+import com.streamify.comment.CommentRepository;
 import com.streamify.common.PageResponse;
 import com.streamify.user.User;
 import com.streamify.user.UserRepository;
@@ -24,13 +25,15 @@ public class PostService {
     private final PostMediaRepository postMediaRepository;
     private final PostMapper postMapper;
     private final UserRepository userRepository;
+    private final CommentRepository commentRepository;
 
-    public PostService(PostRepository postRepository, MediaServiceImpl mediaService, PostMediaRepository postMediaRepository, PostMapper postMapper, UserRepository userRepository) {
+    public PostService(PostRepository postRepository, MediaServiceImpl mediaService, PostMediaRepository postMediaRepository, PostMapper postMapper, UserRepository userRepository, CommentRepository commentRepository) {
         this.postRepository = postRepository;
         this.mediaService = mediaService;
         this.postMediaRepository = postMediaRepository;
         this.postMapper = postMapper;
         this.userRepository = userRepository;
+        this.commentRepository = commentRepository;
     }
 
     public String uploadPost(
@@ -193,8 +196,25 @@ public class PostService {
     }
 
     public PageResponse<PostResponse> getAllSavedPostsByUser(int page, int size, String userId) {
-        // todo -> implement later
-        return null;
+        User user = findUserById(userId);
+        List<String> savedPostIds = user.getSavedPost()
+                .stream()
+                .map(Post::getId)
+                .toList();
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<Post> posts = postRepository.findAllMySavedPosts(pageable, savedPostIds);
+        List<PostResponse> postResponses = posts.stream()
+                .map(postMapper::toPostResponse)
+                .toList();
+        return PageResponse.<PostResponse>builder()
+                .content(postResponses)
+                .number(posts.getNumber())
+                .size(posts.getSize())
+                .totalElements(posts.getTotalElements())
+                .totalPages(posts.getTotalPages())
+                .first(posts.isFirst())
+                .last(posts.isLast())
+                .build();
     }
 
     public PageResponse<PostResponse> getAllTaggedPosts(int page, int size, String userId) {

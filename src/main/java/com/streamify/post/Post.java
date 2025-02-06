@@ -1,5 +1,6 @@
 package com.streamify.post;
 
+import com.streamify.comment.Comment;
 import com.streamify.user.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -43,6 +44,8 @@ public class Post {
     private boolean isArchived;
     private String location;
     private boolean isReel;
+
+    // todo -> likes impl
 
     @ManyToMany
     @JoinTable(

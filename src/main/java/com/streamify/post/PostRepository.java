@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface PostRepository extends JpaRepository<Post, String> {
     @Query("""
@@ -44,4 +46,11 @@ public interface PostRepository extends JpaRepository<Post, String> {
             WHERE post.user.id = :userId
             """)
     Page<Post> findAllMyPosts(Pageable pageable, @Param("userId") String userId);
+
+    @Query("""
+            SELECT post
+            FROM Post post
+            WHERE post.id IN :savedPostIds
+            """)
+    Page<Post> findAllMySavedPosts(Pageable pageable, @Param("savedPostIds") List<String> savedPostIds);
 }

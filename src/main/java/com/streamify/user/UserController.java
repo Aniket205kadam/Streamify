@@ -52,8 +52,6 @@ public class UserController {
                 .body(postService.getAllSavedPostsByUser(page, size, userId));
     }
 
-    // todo -> display the tag posts
-
     @GetMapping("/{user-id}/tag-posts")
     public ResponseEntity<PageResponse<PostResponse>> getAllTagPosts(
             @PathVariable("user-id") String userId,
