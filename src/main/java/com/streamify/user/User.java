@@ -1,5 +1,6 @@
 package com.streamify.user;
 
+import com.streamify.post.Post;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -13,7 +14,9 @@ import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Setter
 @Getter
@@ -75,6 +78,14 @@ public class User implements UserDetails, Principal {
     private String languagePreference;
 
     // relations
+    @ManyToMany
+    @JoinTable(
+            name = "user_saved_posts",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "post_id")
+    )
+    private Set<Post> savedPost = new LinkedHashSet<>();
+
     @OneToMany(fetch = FetchType.EAGER, mappedBy = "user")
     private List<Token> tokens;
 

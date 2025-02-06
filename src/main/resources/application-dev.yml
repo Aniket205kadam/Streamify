@@ -30,9 +30,9 @@ spring:
       writetimeout: 5000
 
 twilio:
-  account_sid:
-  auth_token:
-  phone_number: 
+  account_sid: ${TWILIO.ACCOUNT_SID}
+  auth_token: ${TWILIO.AUTHENTICATION_TOKEN}
+  phone_number: ${TWILIO.PHONE_NUMBER}
 
 application:
   mailing:

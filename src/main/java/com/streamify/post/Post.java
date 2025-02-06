@@ -42,6 +42,7 @@ public class Post {
     @Column(nullable = false)
     private boolean isArchived;
     private String location;
+    private boolean isReel;
 
     @ManyToMany
     @JoinTable(
