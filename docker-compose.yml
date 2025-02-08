@@ -15,6 +15,21 @@ services:
       - streamify
     restart: unless-stopped
 
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: pgadmin4@pgadmin.org
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'  # Run in desktop mode
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    ports:
+      - 5050:80
+    networks:
+      - streamify
+    restart: unless-stopped
+
   mail-dev:
     container_name: mail-dev-streamify
     image: maildev/maildev
@@ -23,6 +38,7 @@ services:
       - 1025:1025
     networks:
       - streamify
+    restart: unless-stopped  # Added restart policy
 
 networks:
   streamify:
@@ -30,4 +46,6 @@ networks:
 
 volumes:
   postgres:
+    driver: local
+  pgadmin:
     driver: local

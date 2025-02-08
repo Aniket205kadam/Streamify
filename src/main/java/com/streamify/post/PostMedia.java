@@ -1,5 +1,6 @@
 package com.streamify.post;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -19,6 +20,7 @@ public class PostMedia {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
@@ -26,5 +28,4 @@ public class PostMedia {
     private String mediaUrl;
     private String type;
     private String altText;
-    private List<MediaTag> tags;
 }

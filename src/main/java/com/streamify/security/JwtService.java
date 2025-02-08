@@ -35,22 +35,7 @@ public class JwtService {
                 .toList();
         return Jwts
                 .builder()
-                .setClaims(claims
-                        .entrySet()
-                        .stream()
-                        .filter(claim ->
-                                !claim
-                                        .getKey()
-                                        .equals("identifier")
-                        )
-                        .collect(
-                                Collectors.toMap(
-                                        Map.Entry::getKey,
-                                        Map.Entry::getValue
-                                )
-                        )
-                )
-                .setSubject(claims.get("identifier").toString())
+                .setSubject(claims.get("username").toString())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .claim("authorities", authorities)

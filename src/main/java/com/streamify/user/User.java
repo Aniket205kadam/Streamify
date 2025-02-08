@@ -73,7 +73,7 @@ public class User implements UserDetails, Principal {
     private LocalDateTime  lastLoginAt;
 
     // optional enhancements
-    private LocalDateTime dateOfBirth;
+    private LocalDate dateOfBirth;
     private String location;
     private String languagePreference;
 
@@ -102,16 +102,6 @@ public class User implements UserDetails, Principal {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of();
-    }
-
-    @Override
-    public String getPassword() {
-        return password;
-    }
-
-    @Override
-    public String getUsername() {
-        return username;
     }
 
     @Override

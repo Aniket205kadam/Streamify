@@ -1,9 +1,6 @@
 package com.streamify.authentication;
 
-import com.streamify.mail.EmailService;
-import com.streamify.mail.MailConfirmationRequest;
-import com.streamify.mail.MailRequest;
-import com.streamify.mail.MailTemplateName;
+import com.streamify.mail.*;
 import com.streamify.phone.PhoneService;
 import com.streamify.phone.SMSRequest;
 import com.streamify.security.JwtService;
@@ -29,7 +26,7 @@ import java.util.*;
 public class AuthenticationService {
     private final UserRepository userRepository;
     private final TokenRepository tokenRepository;
-    private final EmailService mailService;
+    private final MailService mailService;
     private final PhoneService phoneService;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
@@ -41,7 +38,7 @@ public class AuthenticationService {
     @Value("${application.Security.jwt.expiration}")
     private long jwtExpiration;
 
-    public AuthenticationService(UserRepository authenticationRepository, TokenRepository tokenRepository, EmailService mailService, PhoneService phoneService, AuthenticationManager authenticationManager, JwtService jwtService, PasswordEncoder passwordEncoder) {
+    public AuthenticationService(UserRepository authenticationRepository, TokenRepository tokenRepository, MailService mailService, PhoneService phoneService, AuthenticationManager authenticationManager, JwtService jwtService, PasswordEncoder passwordEncoder) {
         this.userRepository = authenticationRepository;
         this.tokenRepository = tokenRepository;
         this.mailService = mailService;
@@ -57,7 +54,7 @@ public class AuthenticationService {
                 .fullName(request.getFullName())
                 .email(request.getEmail())
                 .phone(request.getPhone())
-                .password(request.getPassword())
+                .password(passwordEncoder.encode(request.getPassword()))
                 .username(request.getUsername())
                 .isVerified(false)
                 .isPrivate(false)
@@ -146,10 +143,11 @@ public class AuthenticationService {
         if (Period.between(dataOfBirth, LocalDate.now()).getYears() < 16) {
             throw new IllegalStateException("User must be at least 16 years old.");
         }
+        user.setDateOfBirth(dataOfBirth);
         return userRepository.save(user).getId();
     }
 
-    public AuthenticationResponse accountVerification(String username, String verificationCode) throws Exception {
+    public String accountVerification(String username, String verificationCode) throws Exception {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() ->
                         new EntityNotFoundException("User is not found with username: " + username)
@@ -175,21 +173,39 @@ public class AuthenticationService {
         token.setValidatedAt(LocalDateTime.now());
         tokenRepository.save(token);
         AuthenticationRequest request = AuthenticationRequest.builder()
-                .identifier((user.getEmail() == null) ? user.getPhone() : user.getEmail())
+                .identifier(user.getUsername())
                 .password(user.getPassword())
                 .build();
-        return authenticate(request);
+        return user.getId();
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        Authentication authentication =authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getIdentifier(), request.getPassword())
-        );
+        User user = null;
         Map<String, Object> claims = new HashMap<>();
-        User user = (User) authentication.getPrincipal();
-        claims.put("identifier", request.getIdentifier());
-        String jwtToken = jwtService.generateJwtToken(claims, user);
+        if (request.getIdentifier().contains("@")) {
+            user = userRepository.findByEmail(request.getIdentifier())
+                    .orElseThrow(() -> new EntityNotFoundException("User is not found with Email: " + request.getIdentifier()));
+        } else if (request.getIdentifier().matches("^(\\+\\d{1,3}[- ]?)?\\(?\\d{1,4}\\)?[- ]?\\d{1,4}[- ]?\\d{1,4}$")) {
+            user = userRepository.findByPhone(request.getIdentifier())
+                    .orElseThrow(() -> new EntityNotFoundException("User is not found with Phone: " + request.getIdentifier()));
+        } else {
+            user = userRepository.findByUsername(request.getIdentifier())
+                    .orElseThrow(() -> new EntityNotFoundException("User is not found with username: " + request.getIdentifier()));
+        }
+        claims.put("username", user.getUsername());
+        System.out.println("username: " + user.getUsername());
+        System.out.println("password: " + request.getPassword());
+        if (request.isInternal()) {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(user.getUsername(), request.getPassword())
+            );
+        } else {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(user.getUsername(), request.getPassword())
+            );
+        }
 
+        String jwtToken = jwtService.generateJwtToken(claims, user);
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
 

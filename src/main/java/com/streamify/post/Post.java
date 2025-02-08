@@ -1,5 +1,6 @@
 package com.streamify.post;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.streamify.comment.Comment;
 import com.streamify.user.User;
 import jakarta.persistence.*;

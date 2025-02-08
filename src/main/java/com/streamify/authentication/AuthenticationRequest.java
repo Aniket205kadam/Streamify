@@ -17,4 +17,6 @@ public class AuthenticationRequest {
     @NotEmpty(message = "Please enter your password to continue!")
     @NotBlank(message = "Please enter your password to continue!")
     private String password;
+
+    private boolean isInternal;
 }

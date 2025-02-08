@@ -12,11 +12,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class PostService {
@@ -27,7 +28,14 @@ public class PostService {
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
 
-    public PostService(PostRepository postRepository, MediaServiceImpl mediaService, PostMediaRepository postMediaRepository, PostMapper postMapper, UserRepository userRepository, CommentRepository commentRepository) {
+    public PostService(
+            PostRepository postRepository,
+            MediaServiceImpl mediaService,
+            PostMediaRepository postMediaRepository,
+            PostMapper postMapper,
+            UserRepository userRepository,
+            CommentRepository commentRepository
+    ) {
         this.postRepository = postRepository;
         this.mediaService = mediaService;
         this.postMediaRepository = postMediaRepository;
@@ -36,94 +44,9 @@ public class PostService {
         this.commentRepository = commentRepository;
     }
 
-    public String uploadPost(
-            UploadPostRequest request,
-            Authentication connectedUser
-    ) throws IOException {
-        User user = (User) connectedUser.getPrincipal();
-        Post post = Post.builder()
-                .caption(request.getCaption())
-                .visibility(request.getVisibility())
-                .isArchived(request.isArchived())
-                .location(request.getLocation())
-                .collaborators(request.getCollaborators())
-                .hideLikesAndViewCounts(request.isHideLikesAndViewCounts())
-                .allowComments(request.isAllowComments())
-                .build();
-
-        // check if this is reels or not
-        if (request.getFiles().size() == 1 && Objects.requireNonNull(request.getFiles().getFirst().getFile().getContentType()).startsWith("video/")) {
-            post.setReel(true);
-        }
-
-        // save the post
-        Post savedPost = postRepository.save(post);
-
-        // save the post content
-        for (FileMetadata content : request.getFiles()) {
-            if (Objects.requireNonNull(content.getFile().getContentType()).startsWith("image/")) {
-                String storedImageUrl = mediaService.uploadPostContent(content.getFile(), user.getId(), savedPost.getId());
-                if (content.getAltText() == null) {
-                    // generate altText by using AI
-                    content.setAltText(generateAltTextForImage(content.getFile()));
-                }
-                PostMedia postMedia = PostMedia
-                        .builder()
-                        .post(savedPost)
-                        .mediaUrl(storedImageUrl)
-                        .type(content.getFile().getContentType())
-                        .altText(content.getAltText())
-                        .tags(content.getTags())
-                        .build();
-                postMediaRepository.save(postMedia);
-            } else if (content.getFile().getContentType().startsWith("video/")) {
-                String storedVideoUrl = mediaService.uploadPostContent(content.getFile(), user.getId(), savedPost.getId());
-                if (content.getAltText() == null) {
-                    // generate altText by AI
-                    content.setAltText(generateAltTextForVideo(content.getFile()));
-                }
-                PostMedia postMedia = PostMedia
-                        .builder()
-                        .post(savedPost)
-                        .mediaUrl(storedVideoUrl)
-                        .type(content.getFile().getContentType())
-                        .altText(content.getAltText())
-                        .tags(content.getTags())
-                        .build();
-                postMediaRepository.save(postMedia);
-            } else {
-                throw new IllegalArgumentException("Only image and video file types are allowed. Please upload a valid image or video.");
-            }
-        }
-        return savedPost.getId();
-    }
-
-    private String generateAltTextForVideo(MultipartFile file) {
-        // todo -> Integrate AI and generate the alt text for the image
-        return null;
-    }
-
-    private String generateAltTextForImage(MultipartFile file) {
-        // todo -> Integrate AI and generate the alt text for the video
-        return null;
-    }
-
     private Post findPostById(@NonNull String postId) {
         return postRepository.findById(postId)
                 .orElseThrow(() -> new EntityNotFoundException("The post is not found with ID: " + postId));
-    }
-
-    public String updatePost(String postId, UpdatePostRequest request, Authentication connectedUser) {
-        User user = (User) connectedUser.getPrincipal();
-        Post post = findPostById(postId);
-        if (!(post.getUser().getId().equals(user.getId()))) {
-            throw new IllegalStateException("You have not authority to update this post!");
-        }
-        post.setCaption(request.getCaption());
-        post.setVisibility(request.getVisibility());
-        post.setLocation(request.getLocation());
-        post.setCollaborators(request.getCollaborators());
-        return postRepository.save(post).getId();
     }
 
     public String updateHideLikeCount(String postId, Authentication connectedUser) {
@@ -162,7 +85,7 @@ public class PostService {
     public PageResponse<PostResponse> getAllPostsByUserId(int page, int size, String userId) {
         User user = findUserById(userId);
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Post> posts = postRepository.findAllDisplayablePosts(pageable, user.getId());
+        Page<Post> posts = postRepository.findAllDisplayablePosts(pageable, user.getId(), PostVisibility.PUBLIC);
         List<PostResponse> postResponses = posts.stream()
                 .map(postMapper::toPostResponse)
                 .toList();
@@ -180,7 +103,7 @@ public class PostService {
     public PageResponse<PostResponse> getAllReelsByUserId(int page, int size, String userId) {
         User user = findUserById(userId);
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Post> posts = postRepository.findAllDisplayableReels(pageable, user.getId());
+        Page<Post> posts = postRepository.findAllDisplayableReels(pageable, user.getId(), PostVisibility.PUBLIC);
         List<PostResponse> postResponses = posts.stream()
                 .map(postMapper::toPostResponse)
                 .toList();
@@ -217,24 +140,6 @@ public class PostService {
                 .build();
     }
 
-    public PageResponse<PostResponse> getAllTaggedPosts(int page, int size, String userId) {
-        User user = findUserById(userId);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Post> posts = postRepository.findAllTaggedPosts(pageable, user.getId());
-        List<PostResponse> postResponses = posts.stream()
-                .map(postMapper::toPostResponse)
-                .toList();
-        return PageResponse.<PostResponse>builder()
-                .content(postResponses)
-                .number(posts.getNumber())
-                .size(posts.getSize())
-                .totalElements(posts.getTotalElements())
-                .totalPages(posts.getTotalPages())
-                .first(posts.isFirst())
-                .last(posts.isLast())
-                .build();
-    }
-
     public PageResponse<PostResponse> getAllMyPost(int page, int size, Authentication connectedUser) {
         User user = (User) connectedUser.getPrincipal();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
@@ -253,13 +158,112 @@ public class PostService {
                 .build();
     }
 
-    public Boolean deletePostById(String postId, Authentication connectedUser) {
+    public Boolean deletePostById(String postId, Authentication connectedUser) throws IOException {
         User user = (User) connectedUser.getPrincipal();
         Post post = findPostById(postId);
         if (!(post.getUser().getId().equals(user.getId()))) {
             throw new IllegalStateException("You don't have the authority to delete the post!");
         }
+        try {
+            boolean isContentDeleted = mediaService.deletePostContent(post.getPostMedia());
+            if (!isContentDeleted)
+                throw new IOException("Files deletion failed!");
+        } catch (IOException exception) {
+            throw new IllegalStateException("Post deletion failed!");
+        }
         postRepository.deleteById(post.getId());
         return true;
+    }
+
+    public String likePost(String postId) {
+        return null;
+    }
+
+    public String uploadPostContent(Authentication connectedUser, MultipartFile... contents) throws IOException {
+        User user = (User) connectedUser.getPrincipal();
+        Post post = Post.builder()
+                .visibility(PostVisibility.PUBLIC)
+                .isArchived(true)
+                .hideLikesAndViewCounts(false)
+                .allowComments(true)
+                .user(user)
+                .build();
+        Post savedPost = postRepository.save(post);
+
+        List<PostMedia> postMediaList = new ArrayList<>();
+        for (MultipartFile content : contents) {
+            if (content.getContentType().startsWith("image/") || content.getContentType().startsWith("video/")) {
+                String storedUrl = mediaService.uploadPostContent(content, user.getId(), savedPost.getId());
+                PostMedia postMedia = PostMedia.builder()
+                        .post(savedPost)
+                        .mediaUrl(storedUrl)
+                        .type(content.getContentType())
+                        .altText(generateAltText(content))
+                        .build();
+                PostMedia savedPostMedia = postMediaRepository.save(postMedia);
+                postMediaList.add(savedPostMedia);
+            } else {
+                throw new IllegalArgumentException("Only image and video file types are allowed. Please upload a valid image or video.");
+            }
+        }
+        savedPost.setPostMedia(postMediaList);
+        return postRepository.save(savedPost).getId();
+    }
+
+    private String generateAltText(MultipartFile content) {
+        // todo -> generate the text by using the AI
+        return "null";
+    }
+
+    @Transactional
+    public String uploadPostMetaData(PostRequest request, String postId, Authentication connectedUser) {
+        Post post = findPostById(postId);
+        // override post meta-data
+        post.setCaption(request.getCaption());
+        post.setVisibility(request.getVisibility());
+        post.setArchived(request.isArchived());
+        post.setLocation(request.getLocation());
+        post.setCollaborators(
+                new HashSet<>(userRepository.findAllById(request.getCollaborators()))
+        );
+        post.setHideLikesAndViewCounts(request.isHideLikesAndViewCounts());
+        post.setAllowComments(request.isAllowComments());
+        postRepository.save(post);
+        return postRepository.save(post).getId();
+    }
+
+    @Transactional
+    public PostResponse updatePost(PostRequest request, Authentication connectedUser) {
+        User user = (User) connectedUser.getPrincipal();
+        Post post = findPostById(request.getId());
+        if (!post.getUser().getId().equals(user.getId())) {
+            throw new IllegalStateException("You don't have the permission to delete the post");
+        }
+        post.setCaption(request.getCaption());
+        post.setVisibility(request.getVisibility());
+        post.setArchived(request.isArchived());
+        post.setLocation(request.getLocation());
+        post.setCollaborators(
+                new HashSet<>(userRepository.findAllById(request.getCollaborators()))
+        );
+        post.setHideLikesAndViewCounts(request.isHideLikesAndViewCounts());
+        post.setAllowComments(request.isAllowComments());
+        Post updatedPost = postRepository.save(post);
+        return PostResponse.builder()
+                .id(updatedPost.getId())
+                .caption(updatedPost.getCaption())
+                .createdAt(updatedPost.getCreatedAt())
+                .visibility(updatedPost.getVisibility())
+                .isArchived(updatedPost.isArchived())
+                .location(updatedPost.getLocation())
+                .isReel(updatedPost.isReel())
+                .collaborators(updatedPost.getCollaborators().stream()
+                        .map(User::getUsername)
+                        .collect(Collectors.toSet())
+                )
+                .hideLikesAndViewCounts(updatedPost.isHideLikesAndViewCounts())
+                .allowComments(updatedPost.isAllowComments())
+                .postMedia(updatedPost.getPostMedia())
+                .build();
     }
 }

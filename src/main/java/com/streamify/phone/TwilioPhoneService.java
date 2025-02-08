@@ -22,6 +22,7 @@ public class TwilioPhoneService implements PhoneService {
     @Override
     @Async
     public void sendMessage(SMSRequest request) throws IllegalArgumentException {
+        System.out.println("Info: " + twilioConfig.getPhoneNumber() + " : " + twilioConfig.getAccountSid() + " : " + twilioConfig.getAuthToken());
         if (isValidNumber(request.getPhoneNumber())) {
             PhoneNumber to = new PhoneNumber(request.getPhoneNumber());
             PhoneNumber from = new PhoneNumber(twilioConfig.getPhoneNumber());

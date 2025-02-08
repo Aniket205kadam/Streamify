@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -46,6 +47,24 @@ public class MediaServiceImpl implements MediaService {
             LOGGER.error("Post Content was not saved @error: {}", exception.getMessage());
             throw exception;
         }
+    }
+
+    @Override
+    public boolean deletePostContent(List<PostMedia> postMedias) throws IOException {
+       for (PostMedia postMedia : postMedias) {
+           Files.delete(Paths.get(postMedia.getMediaUrl()));
+       }
+       // delete the parent folder
+       Files.delete(
+               Paths.get(
+                       postMedias.getFirst().getMediaUrl()
+                               .substring(
+                                       0,
+                                       postMedias.getFirst().getMediaUrl().lastIndexOf(File.separator)
+                               )
+               )
+       );
+       return true;
     }
 
     private String getFileExtension(String filename) {

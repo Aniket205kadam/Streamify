@@ -1,6 +1,8 @@
 package com.streamify.post;
 
+import com.streamify.comment.CommentResponse;
 import com.streamify.comment.CommentService;
+import com.streamify.common.PageResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
@@ -8,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
@@ -23,25 +26,25 @@ public class PostController {
         this.commentService = commentService;
     }
 
-    @PostMapping
-    public ResponseEntity<String> uploadPost(
-            @RequestBody @Valid UploadPostRequest request,
-            Authentication connectedUser
+    @PostMapping("/contents")
+    public ResponseEntity<String> storedContents(
+            Authentication connectedUser,
+            @RequestPart("contents") MultipartFile... contents
     ) throws IOException {
         return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(postService.uploadPost(request, connectedUser));
+                .status(HttpStatus.OK)
+                .body(postService.uploadPostContent(connectedUser, contents));
     }
 
-    @PutMapping("/{post-id}")
-    public ResponseEntity<String> updatePost(
-            @RequestBody @Valid UpdatePostRequest request,
+    @PostMapping("/{post-id}/meta-data")
+    public ResponseEntity<String> savePostMetaData(
+            @RequestBody @Valid PostRequest request,
             @PathVariable("post-id") String postId,
             Authentication connectedUser
     ) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(postService.updatePost(postId, request, connectedUser));
+                .body(postService.uploadPostMetaData(request, postId, connectedUser));
     }
 
     @PatchMapping("/{post-id}/hide/like-count")
@@ -73,11 +76,21 @@ public class PostController {
                 .body(postService.getPostById(postId));
     }
 
+    @PutMapping("/{post-id}")
+    public ResponseEntity<PostResponse> updatePost(
+            @RequestBody @Valid PostRequest request,
+            Authentication connectedUser
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(postService.updatePost(request, connectedUser));
+    }
+
     @DeleteMapping("/{post-id}")
     public ResponseEntity<Boolean> deletePostById(
             @PathVariable("post-id") String postId,
             Authentication connectedUser
-    ) {
+    ) throws IOException {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(postService.deletePostById(postId, connectedUser));
@@ -118,20 +131,22 @@ public class PostController {
 
     @PatchMapping("/comment/{comment-id}/like")
     public ResponseEntity<String> likeComment(
-            @PathVariable("comment-id") String commentId
+            @PathVariable("comment-id") String commentId,
+            Authentication connectedUser
     ) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(commentService.likeComment(commentId));
+                .body(commentService.likeComment(commentId, connectedUser));
     }
 
     @PatchMapping("/comment/{comment-id}/unlike")
     public ResponseEntity<String> unlikeComment(
-            @PathVariable("comment-id") String commentId
+            @PathVariable("comment-id") String commentId,
+            Authentication connectedUser
     ) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(commentService.unlikeComment(commentId));
+                .body(commentService.unlikeComment(commentId, connectedUser));
     }
 
     @DeleteMapping("/comment/{comment-id}")
@@ -154,5 +169,27 @@ public class PostController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(commentService.sendReplyToComment(postId, commentId, content, connectedUser));
+    }
+
+    @GetMapping("/{post-id}/comments")
+    public ResponseEntity<PageResponse<CommentResponse>> getAllPostComments(
+            @PathVariable("post-id") String postId,
+            @RequestParam(name = "page", defaultValue = "0", required = false) int page,
+            @RequestParam(name = "size", defaultValue = "10", required = false) int size
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(commentService.getAllPostComment(postId, page, size));
+    }
+
+    @GetMapping("/{comment-id}/replies")
+    public ResponseEntity<PageResponse<CommentResponse>> getALLCommentReplies(
+            @PathVariable("comment-id") String commentId,
+            @RequestParam(name = "page", defaultValue = "0", required = false) int page,
+            @RequestParam(name = "size", defaultValue = "10", required = false) int size
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(commentService.getAllCommentReplies(commentId, page, size));
     }
 }

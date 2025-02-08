@@ -28,8 +28,8 @@ public class EmailService implements MailService {
         this.templateEngine = templateEngine;
     }
 
-    @Async
     @Override
+    @Async
     public void sendMail(MailConfirmationRequest request) throws MessagingException {
         String templateName;
         if (request.getMailTemplate() == null) {
@@ -65,8 +65,8 @@ public class EmailService implements MailService {
         mailSender.send(mimeMessage);
     }
 
-    @Async
     @Override
+    @Async
     public void sendMail(MailRequest request) throws MessagingException {
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(
@@ -88,8 +88,13 @@ public class EmailService implements MailService {
 
         mimeMessage.addHeader("X-Custom-Header", "");
         mimeMessage.setHeader("X-No-Reply", "true");
+        MailTemplateName templateName = request.getMailTemplate();
 
-        String template = templateEngine.process(request.getMailTemplate().toString(), context);
+        if (templateName == null) {
+            throw new IllegalArgumentException("Template name required!");
+        }
+
+        String template = templateEngine.process(templateName.getName(), context);
         helper.setText(template, true);
         mailSender.send(mimeMessage);
     }

@@ -21,9 +21,8 @@ public class PostResponse {
     private boolean isArchived;
     private String location;
     private boolean isReel;
-    private Set<User> collaborators;
+    private Set<String> collaborators;
     private boolean hideLikesAndViewCounts;
     private boolean allowComments;
-    private List<Comment> comments;
     private List<PostMedia> postMedia;
 }

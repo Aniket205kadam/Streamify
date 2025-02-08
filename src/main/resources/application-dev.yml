@@ -7,7 +7,7 @@ spring:
   jpa:
     show-sql: true
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
@@ -36,7 +36,7 @@ twilio:
 
 application:
   mailing:
-    app-mail: mail.streamify.com
+    app-mail: noreply@streamify.com
     activation-url: http://localhost:5173/accounts/activate-account
   Security:
       jwt:

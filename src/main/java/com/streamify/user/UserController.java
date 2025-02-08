@@ -23,7 +23,7 @@ public class UserController {
     public ResponseEntity<PageResponse<PostResponse>> getAllPostByUser(
             @PathVariable("user-id") String userId,
             @RequestParam(name = "page", defaultValue = "0", required = false) int page,
-            @RequestParam(name = "size", defaultValue = "0", required = false) int size
+            @RequestParam(name = "size", defaultValue = "10", required = false) int size
     ) {
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -34,7 +34,7 @@ public class UserController {
     public ResponseEntity<PageResponse<PostResponse>> getAllReelsByUser(
             @PathVariable("user-id") String userId,
             @RequestParam(name = "page", defaultValue = "0", required = false) int page,
-            @RequestParam(name = "size", defaultValue = "0", required = false) int size
+            @RequestParam(name = "size", defaultValue = "10", required = false) int size
     ) {
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -45,28 +45,17 @@ public class UserController {
     public ResponseEntity<PageResponse<PostResponse>> getAllSavedPostsByUser(
             @PathVariable("user-id") String userId,
             @RequestParam(name = "page", defaultValue = "0", required = false) int page,
-            @RequestParam(name = "size", defaultValue = "0", required = false) int size
+            @RequestParam(name = "size", defaultValue = "10", required = false) int size
     ) {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(postService.getAllSavedPostsByUser(page, size, userId));
     }
 
-    @GetMapping("/{user-id}/tag-posts")
-    public ResponseEntity<PageResponse<PostResponse>> getAllTagPosts(
-            @PathVariable("user-id") String userId,
-            @RequestParam(name = "page", defaultValue = "0", required = false) int page,
-            @RequestParam(name = "size", defaultValue = "0", required = false) int size
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(postService.getAllTaggedPosts(page, size, userId));
-    }
-
     @GetMapping("/my-posts")
     public ResponseEntity<PageResponse<PostResponse>> getAllMyPost(
             @RequestParam(name = "page", defaultValue = "0", required = false) int page,
-            @RequestParam(name = "size", defaultValue = "0", required = false) int size,
+            @RequestParam(name = "size", defaultValue = "10", required = false) int size,
             Authentication connectedUser
     ) {
         return ResponseEntity

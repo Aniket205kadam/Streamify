@@ -1,9 +1,7 @@
 package com.streamify.post;
 
-import com.streamify.user.User;
 import lombok.*;
 
-import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -11,13 +9,17 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UploadPostRequest {
+public class PostRequest {
+    private String id;
     private String caption;
     private PostVisibility visibility;
     private boolean isArchived;
     private String location;
-    private Set<User> collaborators;
+    private Set<String> collaborators;
     private boolean hideLikesAndViewCounts;
     private boolean allowComments;
-    private List<FileMetadata> files;
 }
+
+/*
+* if id exist means update the Post
+*/

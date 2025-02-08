@@ -10,9 +10,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 @RestController
-@RequestMapping("auth")
+@RequestMapping("/auth")
 @Tag(name = "Authentication")
 public class AuthenticationController {
     private final AuthenticationService authenticationService;
@@ -44,7 +45,7 @@ public class AuthenticationController {
     }
 
     @PutMapping("/verification/{username}/{verification-code}")
-    public ResponseEntity<AuthenticationResponse> accountVerification(
+    public ResponseEntity<?> accountVerification(
             @PathVariable("username") String username,
             @PathVariable("verification-code") String verificationCode
     ) throws Exception {
@@ -57,7 +58,7 @@ public class AuthenticationController {
 
     @PostMapping("/authenticate")
     public ResponseEntity<AuthenticationResponse> authenticate(
-            @RequestParam @Valid AuthenticationRequest request
+            @RequestBody @Valid AuthenticationRequest request
     ) {
         return ResponseEntity
                 .ok(
