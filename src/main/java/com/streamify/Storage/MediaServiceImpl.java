@@ -1,5 +1,6 @@
 package com.streamify.Storage;
 
+import com.streamify.ffmpeg.FfmpegService;
 import com.streamify.post.PostMedia;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -14,17 +15,24 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
 public class MediaServiceImpl implements MediaService {
     private final Logger LOGGER = LoggerFactory.getLogger(MediaServiceImpl.class);
 
+    private final FfmpegService ffmpegService;
+
     @Value("${application.file.upload.content-base-url.post}")
     private String postBaseUrl;
 
     @Value("${application.file.upload.content-base-url.story}")
     private String storyBaseUrl;
+
+    public MediaServiceImpl(FfmpegService ffmpegService) {
+        this.ffmpegService = ffmpegService;
+    }
 
     @PostConstruct
     public void init() {
@@ -53,6 +61,10 @@ public class MediaServiceImpl implements MediaService {
         try {
             Files.write(targetPath, sourceFile.getBytes());
             LOGGER.info("Post Content saved to {}", targetFilePath);
+            if (Objects.requireNonNull(sourceFile.getContentType()).startsWith("video/")) {
+                // process the video
+                ffmpegService.processVideoWithFfmpeg(targetPath, postId, userId);
+            }
             return targetFilePath;
         } catch (IOException exception) {
             LOGGER.error("Post Content was not saved @error: {}", exception.getMessage());
