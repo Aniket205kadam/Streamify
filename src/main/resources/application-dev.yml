@@ -44,4 +44,6 @@ application:
         secret-key: dEHmGxg1Pd1xvTNdD2UBLQpYhc4FncMG5D-6qmTY6re0ZVgdPF4RN1xN9NEm5NtE0VWkbafCNdRJTN0FWbVDcg==
   file:
     upload:
-      content-base-url: ./post-assets
+      content-base-url:
+        post: ./post-assets
+        story: ./story-assets

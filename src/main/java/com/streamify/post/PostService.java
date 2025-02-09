@@ -1,5 +1,7 @@
 package com.streamify.post;
 
+import com.streamify.Storage.MediaService;
+import com.streamify.Storage.MediaServiceImpl;
 import com.streamify.comment.CommentRepository;
 import com.streamify.common.PageResponse;
 import com.streamify.user.User;
