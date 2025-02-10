@@ -4,6 +4,7 @@ import com.streamify.Storage.MediaService;
 import com.streamify.Storage.MediaServiceImpl;
 import com.streamify.comment.CommentRepository;
 import com.streamify.common.PageResponse;
+import com.streamify.ffmpeg.FfmpegService;
 import com.streamify.user.User;
 import com.streamify.user.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -29,6 +31,7 @@ public class PostService {
     private final PostMapper postMapper;
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
+    private final FfmpegService ffmpegService;
 
     public PostService(
             PostRepository postRepository,
@@ -36,7 +39,7 @@ public class PostService {
             PostMediaRepository postMediaRepository,
             PostMapper postMapper,
             UserRepository userRepository,
-            CommentRepository commentRepository
+            CommentRepository commentRepository, FfmpegService ffmpegService
     ) {
         this.postRepository = postRepository;
         this.mediaService = mediaService;
@@ -44,6 +47,7 @@ public class PostService {
         this.postMapper = postMapper;
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
+        this.ffmpegService = ffmpegService;
     }
 
     private Post findPostById(@NonNull String postId) {
@@ -204,6 +208,10 @@ public class PostService {
                         .build();
                 PostMedia savedPostMedia = postMediaRepository.save(postMedia);
                 postMediaList.add(savedPostMedia);
+                // check this is reel or not
+                if (contents.length == 1 && content.getContentType().startsWith("video/")) {
+                    ffmpegService.isValidReel(Paths.get(storedUrl), savedPost.getId());
+                }
             } else {
                 throw new IllegalArgumentException("Only image and video file types are allowed. Please upload a valid image or video.");
             }

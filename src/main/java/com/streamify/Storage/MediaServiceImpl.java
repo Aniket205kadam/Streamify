@@ -63,7 +63,7 @@ public class MediaServiceImpl implements MediaService {
             LOGGER.info("Post Content saved to {}", targetFilePath);
             if (Objects.requireNonNull(sourceFile.getContentType()).startsWith("video/")) {
                 // process the video
-                ffmpegService.processVideoWithFfmpeg(targetPath, postId, userId);
+                ffmpegService.processPostVideoWithFfmpeg(targetPath, postId, userId);
             }
             return targetFilePath;
         } catch (IOException exception) {
@@ -91,7 +91,7 @@ public class MediaServiceImpl implements MediaService {
     }
 
     @Override
-    public String uploadStoryContent(MultipartFile sourceFile, String userId) throws IOException {
+    public String uploadStoryContent(MultipartFile sourceFile, String storyId, String userId) throws IOException, InterruptedException {
         final String fileExtension = getFileExtension(sourceFile.getOriginalFilename());
         final String finalFileUploadPath = storyBaseUrl + File.separator + userId;
         File targetFolder = new File(finalFileUploadPath);
@@ -118,6 +118,9 @@ public class MediaServiceImpl implements MediaService {
             }
             Files.write(targetPath, sourceFile.getBytes());
             LOGGER.info("Story video saved to {}", targetFilePath);
+
+            // process the video using the ffmpeg
+            ffmpegService.processStoryVideoWithFfmpeg(targetPath, storyId, userId);
             return targetFilePath;
         } else {
             throw new IllegalStateException("Only image and videos are allowed for story!");
@@ -131,10 +134,11 @@ public class MediaServiceImpl implements MediaService {
         return true;
     }
 
-    private boolean isValidStoryVideo(MultipartFile sourceFile) {
+    private boolean isValidStoryVideo(MultipartFile sourceFile) throws IOException, InterruptedException {
         // todo -> here we check the video duration is 15s
-        return true;
+        return ffmpegService.isValidStoryVideo(sourceFile);
     }
+
 
     private String getFileExtension(String filename) {
         if (filename == null || filename.isEmpty()) {

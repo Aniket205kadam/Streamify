@@ -43,19 +43,20 @@ public class StoryService {
     }
 
     @Transactional
-    public String addStory(String caption, boolean isArchived, MultipartFile content, Authentication connectedUser) throws IOException {
+    public String addStory(String caption, boolean isArchived, MultipartFile content, Authentication connectedUser) throws IOException, InterruptedException {
         User user = (User) connectedUser.getPrincipal();
-        String storageUrl = mediaService.uploadStoryContent(content, user.getId());
-
         Story story = Story.builder()
                 .caption(caption)
                 .isArchived(isArchived)
                 .type(StoryType.IMAGE)
                 .user(user)
-                .mediaUrl(storageUrl)
+                .mediaUrl("")
                 .expiredAt(LocalDateTime.now().plusHours(12))
                 .build();
-        return storyRepository.save(story).getId();
+        Story savedStory = storyRepository.save(story);
+        String storageUrl = mediaService.uploadStoryContent(content, savedStory.getId(), user.getId());
+        savedStory.setMediaUrl(storageUrl);
+        return storyRepository.save(savedStory).getId();
     }
 
     public StoryResponse findStoryById(String storyId) {

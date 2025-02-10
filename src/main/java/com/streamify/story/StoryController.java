@@ -35,7 +35,7 @@ public class StoryController {
             @RequestPart("content")
             @NotNull(message = "Content file must not be null")
             MultipartFile content
-    ) throws IOException {
+    ) throws IOException, InterruptedException {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(storyService.addStory(caption, isArchived, content, connectedUser));

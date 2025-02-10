@@ -13,7 +13,7 @@ public interface MediaService {
 
     boolean deletePostContent(List<PostMedia> sourceFiles) throws IOException;
 
-    String uploadStoryContent(MultipartFile sourceFile, String userId) throws IOException;
+    String uploadStoryContent(MultipartFile sourceFile, String storyId, String userId) throws IOException, InterruptedException;
 
     boolean deleteStoryContent(String mediaUrl) throws IOException;
 }
