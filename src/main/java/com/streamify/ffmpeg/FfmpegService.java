@@ -11,15 +11,14 @@ import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.lang.NonNull;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -258,5 +257,28 @@ public class FfmpegService {
         double duration = Double.parseDouble(durationInString.toString());
         Files.deleteIfExists(targetFilePath);
         return duration <= 15;
+    }
+
+    public Resource getImagePreview(String fileUrl, String scale) {
+        scale = (scale == null || scale.isEmpty()) ? "200" : scale;
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "ffmpeg", "-i", fileUrl, "-vf", "scale=" + scale + ":-1", "-q:v", "5", "-f", "image2pipe", "pipe:1"
+            );
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
+            return new InputStreamResource(process.getInputStream());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Resource getImage(String fileUrl) throws FileNotFoundException {
+        File image = new File(fileUrl);
+        if (!image.exists()) {
+            throw new EntityNotFoundException("Image is not found with URL: " + fileUrl);
+        }
+        InputStream inputStream = new FileInputStream(image);
+        return new InputStreamResource(inputStream);
     }
 }
