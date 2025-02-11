@@ -109,4 +109,7 @@ public class StoryController {
     ) throws IOException {
         storyService.deleteStoryById(storyId, connectedUser);
     }
+
+    /*@GetMapping("/following")
+    public ResponseEntity<List<Stro>>*/
 }

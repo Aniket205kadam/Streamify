@@ -19,10 +19,49 @@ import java.util.List;
 public class UserController {
     private final PostService postService;
     private final StoryService storyService;
+    private final UserService userService;
 
-    public UserController(PostService postService, StoryService storyService) {
+    public UserController(PostService postService, StoryService storyService, UserService userService) {
         this.postService = postService;
         this.storyService = storyService;
+        this.userService = userService;
+    }
+
+    @PatchMapping("/follow/{following-id}")
+    public ResponseEntity<String> followUser(
+            @PathVariable("following-id") String followingId,
+            Authentication connectedUser
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(userService.followUser(followingId, connectedUser));
+    }
+
+    @GetMapping("/{user-id}")
+    public ResponseEntity<User> getUserById(
+            @PathVariable("user-id") String userId
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(userService.findUserById(userId));
+    }
+
+    @GetMapping("/followers")
+    public ResponseEntity<List<UserDto>> findMyFollowers(
+            Authentication connectedUser
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(userService.findUserFollowers(connectedUser));
+    }
+
+    @GetMapping("/followings")
+    public ResponseEntity<List<UserDto>> findMyFollowings(
+            Authentication connectedUser
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(userService.findUserFollowings(connectedUser));
     }
 
     @GetMapping("/{user-id}/posts")

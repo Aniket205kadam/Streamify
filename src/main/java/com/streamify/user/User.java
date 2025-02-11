@@ -1,5 +1,6 @@
 package com.streamify.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.streamify.post.Post;
 import jakarta.persistence.*;
 import lombok.*;
@@ -13,10 +14,7 @@ import javax.security.auth.Subject;
 import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Setter
 @Getter
@@ -78,7 +76,21 @@ public class User implements UserDetails, Principal {
     private String languagePreference;
 
     // relations
-    @ManyToMany
+    @JsonIgnore
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "user_followers",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "follower_id")
+    )
+    private Set<User> followers = new HashSet<>();
+
+    @JsonIgnore
+    @ManyToMany(mappedBy = "followers", fetch = FetchType.EAGER)
+    private Set<User> following = new HashSet<>();
+
+    @JsonIgnore
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_saved_posts",
             joinColumns = @JoinColumn(name = "user_id"),
@@ -86,6 +98,7 @@ public class User implements UserDetails, Principal {
     )
     private Set<Post> savedPost = new LinkedHashSet<>();
 
+    @JsonIgnore
     @OneToMany(fetch = FetchType.EAGER, mappedBy = "user")
     private List<Token> tokens;
 

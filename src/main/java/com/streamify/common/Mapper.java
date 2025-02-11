@@ -4,6 +4,7 @@ import com.streamify.comment.Comment;
 import com.streamify.comment.CommentResponse;
 import com.streamify.story.StoryReply;
 import com.streamify.story.StoryReplyResponse;
+import com.streamify.user.User;
 import com.streamify.user.UserDto;
 import org.springframework.stereotype.Service;
 
@@ -40,6 +41,14 @@ public class Mapper {
                         .avtarUrl(null).build())
                 .storyId(storyReply.getStory().getId())
                 .createdAt(storyReply.getCreatedAt())
+                .build();
+    }
+
+    public UserDto toUserDto(User user) {
+        return UserDto.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .avtarUrl(null)
                 .build();
     }
 }
